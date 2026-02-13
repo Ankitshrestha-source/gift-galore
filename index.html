@@ -26,8 +26,10 @@
         .cart { margin: 40px 0; }
         .cart h2 { text-align: center; margin-bottom: 20px; }
         .cart-items { max-width: 800px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
-        .cart-item { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .cart-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .cart-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-left: 10px; }
+        .remove-btn { background: #ff4d4d; border: none; padding: 5px 10px; cursor: pointer; color: #fff; border-radius: 4px; font-size: 0.9rem; margin-left: 10px;}
+        .remove-btn:hover { background: #e60000; }
 
         .checkout-form input, .checkout-form textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #ccc; }
         .checkout-form button { background: #FFD700; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 4px; }
@@ -55,22 +57,22 @@
     <div class="products">
         <div class="product-card">
             <h3>Mini Frame</h3>
-            <img src="https://i.postimg.cc/02PZSJKx/mini-frame.jpg" alt="Customize Cup" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+            <img src="https://i.postimg.cc/02PZSJKx/mini-frame.jpg" alt="Mini Frame" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
             <input type="file" accept="image/*" class="upload">
             <input type="text" placeholder="Add custom text" class="customText">
             <input type="number" placeholder="Quantity" min="1" value="1" class="quantity">
             <button onclick="addToCart(this)">Add to Cart</button>
         </div>
         <div class="product-card">
-            <h3>Folding Frame </h3>
-            <img src="https://i.postimg.cc/VkM6c54S/folding-frame.jpg" alt="Customize Cup" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+            <h3>Folding Frame</h3>
+            <img src="https://i.postimg.cc/VkM6c54S/folding-frame.jpg" alt="Folding Frame" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
             <input type="file" accept="image/*" class="upload">
             <input type="text" placeholder="Add custom text" class="customText">
             <input type="number" placeholder="Quantity" min="1" value="1" class="quantity">
             <button onclick="addToCart(this)">Add to Cart</button>
         </div>
         <div class="product-card">
-            <h3>Customize cup </h3>
+            <h3>Customize Cup</h3>
             <img src="https://i.postimg.cc/h4zh0Cx0/custamizable-cup.jpg" alt="Customize Cup" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
             <input type="file" accept="image/*" class="upload">
             <input type="text" placeholder="Add custom text" class="customText">
@@ -78,8 +80,8 @@
             <button onclick="addToCart(this)">Add to Cart</button>
         </div>
         <div class="product-card">
-            <h3>Customize pillow </h3>
-            <img src="https://i.postimg.cc/4dK4BdY5/custamizable-pillow.jpg" alt="Customize Cup" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+            <h3>Customize Pillow</h3>
+            <img src="https://i.postimg.cc/4dK4BdY5/custamizable-pillow.jpg" alt="Customize Pillow" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
             <input type="file" accept="image/*" class="upload">
             <input type="text" placeholder="Add custom text" class="customText">
             <input type="number" placeholder="Quantity" min="1" value="1" class="quantity">
@@ -93,6 +95,7 @@
     <div class="cart-items" id="cartItems">
         <p>No items in cart.</p>
     </div>
+    <p id="totalQty" style="text-align:center; font-weight:bold;">Total Items: 0</p>
 </section>
 
 <section class="container" id="contact">
@@ -115,53 +118,109 @@
 
 <script>
 let cart = [];
+
+// Add product to cart
 function addToCart(button) {
     const card = button.parentElement;
     const title = card.querySelector('h3').innerText;
     const fileInput = card.querySelector('.upload');
     const customText = card.querySelector('.customText').value;
-    const quantity = card.querySelector('.quantity').value;
+    const quantity = parseInt(card.querySelector('.quantity').value);
     const file = fileInput.files[0];
 
     if(!file) { alert('Please upload an image'); return; }
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        cart.push({title, customText, quantity, file});
+        cart.push({
+            title,
+            customText,
+            quantity,
+            imageBase64: e.target.result
+        });
         updateCart();
     };
     reader.readAsDataURL(file);
 }
 
+// Update cart display
 function updateCart() {
     const cartItems = document.getElementById('cartItems');
-    if(cart.length === 0) { cartItems.innerHTML = '<p>No items in cart.</p>'; return; }
+    const totalQtyEl = document.getElementById('totalQty');
+
+    if(cart.length === 0) {
+        cartItems.innerHTML = '<p>No items in cart.</p>';
+        totalQtyEl.innerText = 'Total Items: 0';
+        return;
+    }
+
     cartItems.innerHTML = '';
+    let totalQty = 0;
+
     cart.forEach((item, index) => {
+        totalQty += item.quantity;
         const div = document.createElement('div');
         div.className = 'cart-item';
-        div.innerHTML = `<span>${item.title} (${item.quantity}) - ${item.customText}</span> <img src='${URL.createObjectURL(item.file)}' alt='${item.title}'>`;
+        div.innerHTML = `
+            <span>${item.title} (${item.quantity}) - ${item.customText}</span>
+            <div>
+                <img src='${item.imageBase64}' alt='${item.title}'>
+                <button class="remove-btn" onclick="removeFromCart(${index})">Remove</button>
+            </div>
+        `;
         cartItems.appendChild(div);
     });
+
+    totalQtyEl.innerText = `Total Items: ${totalQty}`;
 }
 
+// Remove item from cart
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    updateCart();
+}
+
+// Attach all cart data to hidden inputs before form submission
 function attachCartImages() {
     const container = document.getElementById('cartImagesContainer');
     container.innerHTML = '';
-    cart.forEach((item, index) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.name = `image_${index}`;
-        input.files = createFileList(item.file);
-        container.appendChild(input);
-    });
-    return true;
-}
 
-function createFileList(file) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-    return dataTransfer.files;
+    if(cart.length === 0) {
+        alert("Your cart is empty!");
+        return false;
+    }
+
+    cart.forEach((item, index) => {
+        // Image
+        const imgInput = document.createElement('input');
+        imgInput.type = 'hidden';
+        imgInput.name = `image_${index}`;
+        imgInput.value = item.imageBase64;
+        container.appendChild(imgInput);
+
+        // Custom Text
+        const textInput = document.createElement('input');
+        textInput.type = 'hidden';
+        textInput.name = `customText_${index}`;
+        textInput.value = item.customText;
+        container.appendChild(textInput);
+
+        // Quantity
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'hidden';
+        qtyInput.name = `quantity_${index}`;
+        qtyInput.value = item.quantity;
+        container.appendChild(qtyInput);
+
+        // Product Title
+        const titleInput = document.createElement('input');
+        titleInput.type = 'hidden';
+        titleInput.name = `productTitle_${index}`;
+        titleInput.value = item.title;
+        container.appendChild(titleInput);
+    });
+
+    return true;
 }
 </script>
 
